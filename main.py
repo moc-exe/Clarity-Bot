@@ -9,6 +9,7 @@ import clarity_groq_tools as cgt
 import clarity_open_weather
 import groq
 import clarity_tabgraphics
+import clarity_email_tools
 
 
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
@@ -75,9 +76,21 @@ async def askgroq(interaction: discord.Interaction, question: str):
 
 @bot.tree.command(name="weather")
 @app_commands.describe(city="Enter a city for which you'd like to know the weather")
-async def weather(interaction: discord.Interaction, city: str):
+async def weather(interaction: discord.Interaction, city:str = "Montreal"): # defaulted to MTL, will be an optional slash command arg
     response = clarity_open_weather.get_weather(city)
     await interaction.response.send_message(response)
+
+@bot.tree.command(name="textme")
+@app_commands.describe(body="body of your message", subject="subject (optional)")
+async def textme(interaction: discord.Interaction, body:str, subject:str="No subject"):
+    
+    username = interaction.user.name
+    guildname = interaction.guild.name if interaction.guild else "direct message"
+    status = clarity_email_tools.send_text_to_self(subject, body, username, guildname)
+    if status == True: 
+        await interaction.response.send_message("Your message was successfully delivered, thank you! :white_check_mark: ")
+    else:
+        await interaction.response.send_message("Sorry, your message couldn't be delivered at this time... :cross_mark: ")
 
 
 bot.run(clarity_discord_key)
