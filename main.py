@@ -5,11 +5,15 @@ from discord import app_commands
 import time
 import threading
 import os
-import groqclient
+import clarity_groq_tools as cgt
+import clarity_open_weather
+import groq
+import clarity_tabgraphics
 
 
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
 groq_api_key=os.getenv("GROQ_API_KEY")
+groq_model = "llama3-8b-8192"
 
 
 intents = discord.Intents.default()
@@ -17,11 +21,9 @@ intents.guilds = True
 intents.dm_messages = True 
 intents.message_content = True
 
-tabIndex = 1
-numfilesTabgraphics = 5
 
 
-groq_client = groqclient.Client(api_key=groq_api_key)
+groq_client = groq.Client(api_key=groq_api_key)
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 CLIENT_ID = '1296313809883107338'  
@@ -31,9 +33,9 @@ def start_rich_presence():
     rpc.connect()
     while True:
         rpc.update(
-            state="Playing with my girl",          
+            state="listening to /ask /tabgraphics /weather",          
             large_image="embedded_cover",    
-            details="hewwo world, I'm Clarity-bot!"
+            details="I'm Clarity, nice to meet you!"
         )
         time.sleep(15)
 
@@ -49,6 +51,7 @@ async def on_ready():
         print(f"Synced {len(synced)} commands")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="yapping"))
 
 @bot.tree.command(name="sayhello")
 async def sayhello(interaction: discord.Interaction):
@@ -61,16 +64,20 @@ async def whomadeyou(interaction: discord.Interaction):
 
 @bot.tree.command(name="tabgraphics")
 async def tabgraphics(interaction: discord.Interaction):
-    global tabIndex
-    tabIndex = ((tabIndex + 1) % numfilesTabgraphics) + 1
-    await interaction.response.send_message(f"Tabgraphics No{tabIndex}", file=discord.File(f"./tabgraphics/tab{tabIndex}.jpg"))
+    await interaction.response.send_message(file=discord.File(clarity_tabgraphics.get_random_tabgraphic_path()))
 
 
 @bot.tree.command(name="ask")
-@app_commands.describe(question="The question to ask GROQ")
+@app_commands.describe(question=f"The question to ask {groq_model}")
 async def askgroq(interaction: discord.Interaction, question: str):
-    response = groqclient.get_response(groq_client, question)
-    await interaction.response.send_message(f"\n\n### Your Question:\n {question} \n\n### The reply from GROQ:\n {response}\n\n\nHope it helps, your Clarity :smiley_cat:")
+    response = cgt.get_response(groq_client, question, groq_model)
+    await interaction.response.send_message(f"\n\n### Your Question:\n {question} \n\n### The reply from {groq_model}:\n {response}\n\n\nHope it helps, your Clarity :smiley_cat:")
+
+@bot.tree.command(name="weather")
+@app_commands.describe(city="Enter a city for which you'd like to know the weather")
+async def weather(interaction: discord.Interaction, city: str):
+    response = clarity_open_weather.get_weather(city)
+    await interaction.response.send_message(response)
 
 
 bot.run(clarity_discord_key)
