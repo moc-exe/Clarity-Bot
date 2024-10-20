@@ -2,7 +2,7 @@ import os
 from groq import Groq
 def get_groq_client_ready() -> Groq:
     return Groq(api_key=os.getenv("GROQ_API_KEY"))
-def get_response(client: Groq, req: str, model: str) -> str: 
+def get_response(client: Groq, req: str, model: str) -> list[str]: 
 
 
     completion = client.chat.completions.create(
@@ -21,9 +21,20 @@ def get_response(client: Groq, req: str, model: str) -> str:
     stop=None
     )
     
-    out = ""
+    result = ""
     for chunk in completion:
         content = chunk.choices[0].delta.content or ""
-        out += content
+        result += content
 
+    print(result, end ="\n\n\n\n")
+    out = []
+    start = 0
+    end = 1500
+    if len(result) > 1500: 
+        while start < len(result):
+            out.append(result[start:end])
+            start = end
+            end += 1500
+    else:
+        out.append(result)
     return out
