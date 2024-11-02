@@ -16,14 +16,11 @@ clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
 groq_api_key=os.getenv("GROQ_API_KEY")
 groq_model = "llama3-8b-8192"
 
-
 intents = discord.Intents.default()
 intents.guilds = True  
 intents.dm_messages = True 
 intents.messages = True
 intents.message_content = True
-
-
 
 groq_client = groq.Client(api_key=groq_api_key)
 bot = commands.Bot(command_prefix="/", intents=intents)
@@ -79,7 +76,7 @@ async def whomadeyou(interaction: discord.Interaction):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name="tabgraphics")
 async def tabgraphics(interaction: discord.Interaction):
-    await interaction.response.send_message(file=discord.File(clarity_tabgraphics.get_random_tabgraphic_path()))
+    await interaction.response.send_message(clarity_tabgraphics.get_yandere_url())
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -123,7 +120,12 @@ async def textme(interaction: discord.Interaction, body:str, subject:str="No sub
     else:
         await interaction.response.send_message("Sorry, your message couldn't be delivered at this time... :cross_mark: ")
 
-
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.command(name='how_many_tabs')
+@commands.is_owner()
+async def numoftabs(ctx):
+    await ctx.send(f'Currently scraped : {len(clarity_tabgraphics.yandere_large_pics)} pics from yandere')
 
 
 bot.run(clarity_discord_key)
