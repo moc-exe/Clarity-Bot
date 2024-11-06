@@ -23,7 +23,7 @@ intents.messages = True
 intents.message_content = True
 
 groq_client = groq.Client(api_key=groq_api_key)
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 CLIENT_ID = '1296313809883107338'  
 rpc = Presence(CLIENT_ID)
@@ -100,11 +100,22 @@ async def askgroq(interaction: discord.Interaction, question: str):
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.tree.command(name="weather")
-@app_commands.describe(city="Enter a city for which you'd like to know the weather")
-async def weather(interaction: discord.Interaction, city:str = "Montreal"): # defaulted to MTL, will be an optional slash command arg
-    response = clarity_open_weather.get_weather(city)
+@bot.tree.command(name="currentweather")
+@app_commands.describe(city="Enter a city for which you'd like to know the weather", state = "State / Province / Territory", country = "use 2-letter code e.g. CANADA = CA")
+async def weather(interaction: discord.Interaction, city:str = "Montreal", state:str = None, country:str = None): # defaulted to MTL, will be an optional slash command arg
+    response = clarity_open_weather.get_current_weather(clarity_open_weather.geocoder_to_coords(city, state, country))
     await interaction.response.send_message(response)
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="5dayweather")
+@app_commands.describe(city="Enter a city for which you'd like to know the weather for the next 5 days", state = "State / Province / Territory", country = "use 2-letter code e.g. CANADA = CA")
+async def fivedayweather(interaction: discord.Interaction, city:str = "Montreal", state:str = None, country:str = None): # defaulted to MTL, will be an optional slash command arg
+    response = clarity_open_weather.get_5_day_forecast(clarity_open_weather.geocoder_to_coords(city, state, country))
+    await interaction.response.send_message(response[0])
+    for i in range(1, len(response)): 
+        await interaction.followup.send(f"{response[i]}")
+
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -122,9 +133,10 @@ async def textme(interaction: discord.Interaction, body:str, subject:str="No sub
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.command(name='how_many_tabs')
+@bot.command(name='ntabgraphics')
 @commands.is_owner()
 async def numoftabs(ctx):
+    '''Displays number of currently scraped pictures from yandere website with tags = tabgraphics'''
     await ctx.send(f'Currently scraped : {len(clarity_tabgraphics.yandere_large_pics)} pics from yandere')
 
 

@@ -1,6 +1,7 @@
 import os
 import requests as req
 import util_time_formatter as currtime
+from datetime import datetime
 
 def get_weather(city):
     base_url = "http://api.openweathermap.org/data/2.5/weather"
@@ -96,14 +97,14 @@ def get_current_weather(data:dict[str,str]) -> str:
         description = description + format_with_emotes(str(received['weather'][0]['id']), received['weather'][0]['icon'])
 
         return f'''
-                Weather in {city_name}, {state}, {country}
+        Weather in {city_name}, {state}, {country}
                 
-                {description}
-                
-                Temperature: {temp} °C, feels like {feels}°C
-                Humidity: {humidity}%
-                Wind speed: {wind_speed}ms
-                '''
+        {description}
+        
+        Temperature: {temp} °C, feels like {feels}°C
+        Humidity: {humidity}%
+        Wind speed: {wind_speed}ms
+        '''
 
     else:
         print(f'[!] {currtime.get_curr_timestamp()} :Request failed with code = {res.status_code}')
@@ -142,3 +143,54 @@ def format_with_emotes(weather_code: str, icon:str) -> str:
         return " :cloud: "
     else:
         return ""
+
+def get_5_day_forecast(city_data : dict[str,str], ) -> list[str]:
+    
+    base = "http://api.openweathermap.org/data/2.5/forecast"
+    query_str = {
+
+        "lat" : city_data['lat'],
+        'lon' : city_data['lon'],
+        'appid' : os.getenv("OPEN_WEATHER_API_KEY"),
+        'units' : 'metric'
+
+    }
+
+    res = req.get(base, params=query_str)
+    if res.status_code == 200:
+        
+        content = res.json()
+        out = []
+        out.append(f"**Weather Forecast for {content['city']['name']}, {city_data['state']}, {city_data['country']}** \n\n")
+
+        dates_mappings = {} # "day : [entries] "
+
+
+        # this loop is to create a mapping of day : list of weather entries for that day
+        for entry in content['list']:
+            key = entry['dt_txt'][:10]
+            if key not in dates_mappings: 
+                dates_mappings[key] = [] # make a new list of entries
+            dates_mappings[key].append(entry)
+        
+
+        for day, entries in dates_mappings.items():
+
+            record = f'**{day}**:\n\n'
+
+            for entry in entries:
+
+                record += f"{entry['dt_txt'][-8:]}\n" 
+                record += f"Temperature: {entry['main']['temp']} °C, feels like {entry['main']['feels_like']}°C\n"
+                record += f"Humidity: {entry['main']['humidity']}%\n"
+                record += f"Wind Speed: {entry['wind']['speed']} ms\n"
+                record += f"{entry['weather'][0]['description']} {format_with_emotes(str(entry['weather'][0]['id']), entry['weather'][0]['icon'])}\n\n"
+            
+            out.append(record)
+
+        
+        return out
+      
+    else:
+        print(f"[!] {currtime.get_curr_timestamp()} request to 5-day weather openweather api endpoint failed with code = {res.status_code}")
+        return f'We are experiencing a technical problem connecting to weather services, please try again later. (Request failed with code = {res.status_code})'  
