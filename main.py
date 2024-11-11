@@ -10,6 +10,7 @@ import clarity_open_weather
 import groq
 import clarity_tabgraphics
 import clarity_email_tools
+import clarity_filewalker
 
 
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
@@ -134,12 +135,44 @@ async def textme(interaction: discord.Interaction, body:str, subject:str="No sub
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.command(name='ntabgraphics')
-@commands.is_owner()
 async def numoftabs(ctx):
     '''Displays number of currently scraped pictures from yandere website with tags = tabgraphics'''
-    await ctx.send(f'Currently scraped : {len(clarity_tabgraphics.yandere_large_pics)} pics from yandere')
+    if await bot.is_owner(ctx.author):
+        await ctx.send(f'Currently scraped : {len(clarity_tabgraphics.yandere_large_pics)} pics from yandere')
+    else:
+        await ctx.send(f"Sorry, {ctx.author.mention}, you are not authorized to use this command. :eyes: ")
 
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.command(name='getmusicvault')
+async def getmusicvault(ctx: commands.Context) -> None:
+    '''Displays currently stored music collection as a filetree'''
+    if await bot.is_owner(ctx.author):
+        message = clarity_filewalker.print_tree(clarity_filewalker.build_filetree(clarity_filewalker.curr_root_dir))
+        message_list = clarity_filewalker.split_text_by_newlines(message)
+        await ctx.send("## Currently stored\n")
+
+        for m in message_list:
+            await ctx.send(f"```{m}```")
+    else:
+        await ctx.send(f"Sorry, {ctx.author.mention}, you are not authorized to use this command. :eyes: ")
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.command(name='getf')
+
+async def getf(ctx: commands.Context, filepath: str = None) -> None:
+    '''Retrieves and uploads a file provided the path is valid and the size is valid to be uploaded'''
+    if await bot.is_owner(ctx.author):
+        
+        checkup = clarity_filewalker.check_is_file_and_size(filepath)
+
+        if checkup[0]:
+            await ctx.send(file=discord.File(checkup[1]))
+        else:
+            await ctx.send(checkup[1])
+
+    else:
+        await ctx.send(f"Sorry, {ctx.author.mention}, you are not authorized to use this command. :eyes: ")
 
 bot.run(clarity_discord_key)
-
-
