@@ -11,6 +11,8 @@ import groq
 import clarity_tabgraphics
 import clarity_email_tools
 import clarity_filewalker
+import clarity_youtube_tools as clarity_yt
+import clarity_emotes
 
 
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
@@ -46,7 +48,7 @@ def start_rich_presence():
 
         while True:
             rpc.update(
-                state=f"/ask /tabgraphics /sendtext weather",          
+                state=f"/ask /queryyoutube /tabgraphics /sendtext /weather",          
                 large_image="embedded_cover",    
                 details="I'm Clarity, nice to meet you!"
             )
@@ -120,6 +122,26 @@ async def fivedayweather(interaction: discord.Interaction, city:str = "Montreal"
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="getemote")
+@app_commands.describe(name="name of the emote")
+async def getemote(interaction: discord.Interaction, name:str):
+
+    if name in clarity_emotes.global_emote_dict.keys():
+        if name.startswith('a:'):
+           await interaction.response.send_message(f"<{name}:{clarity_emotes.global_emote_dict[name]}>")
+        else:
+            await interaction.response.send_message(f"<:{name}:{clarity_emotes.global_emote_dict[name]}>")
+    else:
+        await interaction.response.send_message(f"No such emote sadly ... <:zerotsu_sadge:1312653671737327656>")
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="getemotenames")
+async def getemotenames(interaction: discord.Interaction):
+    await interaction.response.send_message(f"{clarity_emotes.get_emote_keys()}")
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name="textme")
 @app_commands.describe(body="body of your message", subject="subject (optional)")
 async def textme(interaction: discord.Interaction, body:str, subject:str="No subject"):
@@ -131,6 +153,18 @@ async def textme(interaction: discord.Interaction, body:str, subject:str="No sub
         await interaction.response.send_message("Your message was successfully delivered, thank you! :white_check_mark: ")
     else:
         await interaction.response.send_message("Sorry, your message couldn't be delivered at this time... :cross_mark: ")
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="youtubequery")
+@app_commands.describe(query="your query to retrieve a video")
+async def youtubequery(interaction: discord.Interaction, query:str):
+
+    res = clarity_yt.public_yt_query(query)
+    await interaction.response.send_message(res)
+   
+
+
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -166,7 +200,7 @@ async def getf(ctx: commands.Context, filepath: str = None) -> None:
     if await bot.is_owner(ctx.author):
         
         checkup = clarity_filewalker.check_is_file_and_size(filepath)
-
+        '''meow meow'''
         if checkup[0]:
             await ctx.send(file=discord.File(checkup[1]))
         else:
