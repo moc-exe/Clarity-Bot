@@ -199,17 +199,42 @@ async def youtube(interaction: discord.Interaction, query:str):
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name="googlesearch")
-@app_commands.describe(query="your query to search the web", limit = "max number of results to retrieve (1-10 only)")
-async def youtube(interaction: discord.Interaction, query:str, limit:int = 0):
+@app_commands.describe(query="your query to search the web", limit = "max number of results to retrieve (1-10 only)", desc = "descriptions for your search results")
+async def googlesearch(interaction: discord.Interaction, query:str, limit:int = 10, desc:bool = False):
     '''
     browses the web for your query and returns the result
     '''
-    res = c_google.web_search(query, limit)
+    res = c_google.web_search(query, limit, desc)
     formatted_res = c_google.format_web_search(res)
     await interaction.response.send_message(f"\n\n### Your search query : {query}\n {formatted_res[0]}\n")
     for i in range(1, len(formatted_res)):
         await interaction.followup.send(f"{formatted_res[i]}")
     await interaction.followup.send(f"Hope it helps, your Clarity :smiley_cat:")
+
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="googleimage")
+@app_commands.describe(prompt="your prompt to find a picture", 
+                       limit = "max number of results to retrieve (1-10 only)", 
+                       color = "dominant color in the picture", 
+                       size = 'huge / icon / large / medium / small / xlarge / xxlarge', 
+                       image_type = "clipart/face/lineart/stock/photo/animated", 
+                       custom_link = "custom website url to search")
+async def googleimage(interaction: discord.Interaction, 
+                      prompt:str, limit:int=5,
+                      color:str=None,
+                      size:str=None,
+                      image_type:str=None,
+                      custom_link:str=None):
+    '''
+    finds a picture online based on your description
+    '''
+    # def image_search(prompt:str, color:str=None, limit:int=10, size:str=None, image_type:str=None, custom_link:str=None) -> list[str]:
+    res = c_google.image_search(prompt, color, limit, size, image_type, custom_link)
+    formatted_res = c_google.format_web_search(res)
+    await interaction.response.send_message(f"## Your search query : {prompt}\n {formatted_res[0]}\n")
+    for i in range(1, len(formatted_res)):
+        await interaction.followup.send(f"{formatted_res[i]}")
 
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
