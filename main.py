@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from pypresence import Presence
 from discord import app_commands
+from discord.ext import tasks, commands
 import time
 import threading
 import os
@@ -14,11 +15,15 @@ import clarity_filewalker
 import clarity_youtube_tools as clarity_yt
 import clarity_emotes
 import clarity_google_search as c_google
+import clarity_cbc_tools
+import util_time_formatter
 
 
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
 groq_api_key=os.getenv("GROQ_API_KEY")
 groq_model = "llama3-8b-8192"
+news_channel_ID = 1321252031553474582
+test_channel_ID = 1289086658817556480
 
 intents = discord.Intents.default()
 intents.guilds = True  
@@ -38,6 +43,8 @@ async def on_ready():
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
+        check_for_news.start()
+        print(f"News checking routine started")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="yapping"))
@@ -279,5 +286,27 @@ async def getf(ctx: commands.Context, filepath: str = None) -> None:
 
     else:
         await ctx.send(f"Sorry, {ctx.author.mention}, you are not authorized to use this command. :eyes: ")
+
+
+news_counter = 0
+@tasks.loop(hours = 1)
+async def check_for_news():
+    global news_counter
+    news_counter+=1
+    print(f"### [!] {util_time_formatter.get_curr_timestamp()} I'm checking for news")
+    channel = bot.get_channel(news_channel_ID)
+    # await channel.send(f"### [!] {util_time_formatter.get_curr_timestamp()} I'm checking for news")
+    if not channel:
+        print(f"[!] {util_time_formatter.get_curr_timestamp()} Clarity couldnt connect to the news channel...")
+        return
+
+    articles = await clarity_cbc_tools.fetch_news()
+    
+    if news_counter <= 1:
+        await channel.send("Back online, I'm checking for news.")
+    else:
+        for article in articles:
+            await channel.send(article)
+
 
 bot.run(clarity_discord_key)
