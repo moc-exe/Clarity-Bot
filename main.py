@@ -22,7 +22,7 @@ import util_time_formatter
 clarity_discord_key = os.getenv("CLARITY_DISCORD_TOKEN")
 groq_api_key=os.getenv("GROQ_API_KEY")
 groq_model = "llama3-8b-8192"
-news_channel_ID = 1321252031553474582
+news_channel_IDs = [1321252031553474582,1321986669183766528]
 test_channel_ID = 1289086658817556480
 
 intents = discord.Intents.default()
@@ -289,24 +289,26 @@ async def getf(ctx: commands.Context, filepath: str = None) -> None:
 
 
 news_counter = 0
-@tasks.loop(hours = 1)
+@tasks.loop(minutes = 30)
 async def check_for_news():
     global news_counter
     news_counter+=1
     print(f"### [!] {util_time_formatter.get_curr_timestamp()} I'm checking for news")
-    channel = bot.get_channel(news_channel_ID)
+    channels = [bot.get_channel(channel) for channel in news_channel_IDs]
     # await channel.send(f"### [!] {util_time_formatter.get_curr_timestamp()} I'm checking for news")
-    if not channel:
+    if not channels:
         print(f"[!] {util_time_formatter.get_curr_timestamp()} Clarity couldnt connect to the news channel...")
         return
 
     articles = await clarity_cbc_tools.fetch_news()
     
     if news_counter <= 1:
-        await channel.send("Back online, I'm checking for news.")
+        for channel in channels:
+            await channel.send("Back online, I'm checking for news.")
     else:
-        for article in articles:
-            await channel.send(article)
+        for channel in channels: 
+            for article in articles:
+                await channel.send(article)
 
 
 bot.run(clarity_discord_key)
