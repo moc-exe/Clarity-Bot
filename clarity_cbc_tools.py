@@ -101,7 +101,7 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 } # the annoying CBC server was blocking us without the browser header detecting the bot...
 
-articles = {} # dictionary to keep sourceId : [title, url, timestamp, isUpdated = False by default]
+articles = {} # dictionary to keep sourceId : (title, url, timestamp, isUpdated = False by default, img)
 
 
 tracked_categories = [
@@ -133,15 +133,25 @@ async def fetch_news() -> list[str]:
                     link = article["href"]
                     timestamp = int(article["updatedAt"])
                     formatted_time = util_time_formatter.unix_time_to_str(timestamp)
+                    img_src = None
+
+                    # let's try to extract a cover picture
+                    if link: 
+                        img_res = requests.get(link, headers=headers, timeout=10, verify=False)
+
+                        if img_res.status_code == 200:
+                            img_soup = BeautifulSoup(img_res.text, 'html.parser')
+                            img_src = img_soup.find('img').get('src') or None
+
 
                     # if the article was already being tracked
                     if sourceID in articles.keys():
                         if articles[sourceID][2] < timestamp: # if the timestamp has changed, it means the article got updated, then we need to send it again
-                            articles[sourceID] = [title, link, timestamp, True] #isUpdated = True
-                            news.append(f"## {title}\n### Updated: {formatted_time}\n {link}")
+                            articles[sourceID] = (title, link, timestamp, True, img_src) #isUpdated = True
+                            news.append(f"## {title}\n### Updated: {formatted_time}\n {link}\n {img_src if img_src else ''}")
                     else:
-                        articles[sourceID] = [title, link, timestamp, False]
-                        news.append(f"## {title}\n### New: {formatted_time}\n {link}")
+                        articles[sourceID] = (title, link, timestamp, False, img_src)
+                        news.append(f"## {title}\n### New: {formatted_time}\n {link}\n {img_src if img_src else ''}")
 
 
             else:
