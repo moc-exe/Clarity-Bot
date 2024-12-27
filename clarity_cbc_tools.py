@@ -133,16 +133,8 @@ async def fetch_news() -> list[str]:
                     link = article["href"]
                     timestamp = int(article["updatedAt"])
                     formatted_time = util_time_formatter.unix_time_to_str(timestamp)
-                    img_src = None
-
                     # let's try to extract a cover picture
-                    if link: 
-                        img_res = requests.get(link, headers=headers, timeout=10, verify=False)
-
-                        if img_res.status_code == 200:
-                            img_soup = BeautifulSoup(img_res.text, 'html.parser')
-                            img_src = img_soup.find('img').get('src') or None
-
+                    img_src = await get_img(link) if link else None
 
                     # if the article was already being tracked
                     if sourceID in articles.keys():
@@ -163,10 +155,36 @@ async def fetch_news() -> list[str]:
 
     return news
 
+async def get_img(url:str) -> str | None:
+    '''tries to GET-request a cbc.com news page and scrape it to extract the thumbnail then returns a url or None'''
+    img_res = requests.get(url, headers=headers, timeout=10, verify=False)
+    img_src = None # will return none by default
+
+    if img_res.status_code == 200:
+        img_soup = BeautifulSoup(img_res.text, 'html.parser')
+        img_script_tag = img_soup.find("script", type="application/ld+json")
+
+        if img_script_tag:
+            json_data = json.loads(img_script_tag.string)
+            img_src = json_data.get("thumbnailUrl") or None
+    
+    return img_src
+
+    
+
+
+
+# async def test_em():
+    
+#     pic = await get_img('https://www.cbc.ca/news/canada/montreal/smog-warning-montreal-boxing-day-1.7419088')
+#     print(pic)
+
+
 # try:
-#     asyncio.run(print_em())
+#     asyncio.run(test_em())
 # except Exception as e:
 #     print(f"[!] Error running main function: {e}")
+
 
 
 
