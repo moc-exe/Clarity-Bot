@@ -1,9 +1,11 @@
 import util_time_formatter
 import json
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 import time
 import asyncio
+
 
 
 # format of the <script> tag on the cbc webpage
@@ -97,6 +99,9 @@ import asyncio
 }
 '''
 
+# i needa get rid of the retarded warnings
+urllib3.disable_warnings()
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 } # the annoying CBC server was blocking us without the browser header detecting the bot...
@@ -110,7 +115,8 @@ tracked_categories = [
     "https://www.cbc.ca/lite/news/world?sort=latest"
 ]
 
-async def fetch_news() -> list[str]:
+# oh my gah i wish i were a birb D:
+async def fetch_news() -> list[tuple[str, str | None]]:
     news = []
 
     for url in tracked_categories:
@@ -140,10 +146,10 @@ async def fetch_news() -> list[str]:
                     if sourceID in articles.keys():
                         if articles[sourceID][2] < timestamp: # if the timestamp has changed, it means the article got updated, then we need to send it again
                             articles[sourceID] = (title, link, timestamp, True, img_src) #isUpdated = True
-                            news.append(f"## {title}\n### Updated: {formatted_time}\n {link}\n {img_src if img_src else ''}")
+                            news.append((f"## {title}\n### Updated: {formatted_time}\n {link}\n", f"{img_src}" if img_src else None ))
                     else:
                         articles[sourceID] = (title, link, timestamp, False, img_src)
-                        news.append(f"## {title}\n### New: {formatted_time}\n {link}\n {img_src if img_src else ''}")
+                        news.append((f"## {title}\n### New: {formatted_time}\n {link}\n", f"{img_src}" if img_src else None))
 
 
             else:
@@ -170,7 +176,9 @@ async def get_img(url:str) -> str | None:
     
     return img_src
 
-    
+
+# 
+
 
 
 

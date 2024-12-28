@@ -308,7 +308,12 @@ async def check_for_news():
     else:
         for channel in channels: 
             for article in articles:
-                await channel.send(article)
+                await channel.send(article[0])
 
+                if article[1]:
+                    e = discord.Embed() 
+                    e.set_image(url=f"{article[1]}") 
+                    await channel.send(embed=e)
+    
 
 bot.run(clarity_discord_key)
